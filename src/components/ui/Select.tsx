@@ -3,6 +3,7 @@ import React from 'react';
 interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
   error?: string;
+   placeholder?: string; 
   options: { value: string | number; label: string }[];
 }
 
@@ -10,6 +11,7 @@ const Select: React.FC<SelectProps> = ({
   label,
   error,
   options,
+  placeholder,
   className = '',
   ...props
 }) => {

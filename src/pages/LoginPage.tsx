@@ -5,6 +5,7 @@ import api from '../lib/api';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
 import { Users } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const LoginPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -13,13 +14,14 @@ const LoginPage: React.FC = () => {
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuthStore();
+  const { login, setLoading, setError, clearError } = useAuthStore();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setErrors({});
+    clearError();
 
     try {
       console.log('FormData:', formData);
@@ -27,6 +29,7 @@ const LoginPage: React.FC = () => {
       const { token, user } = response.data;
       
       login(token, user);
+      toast.success('تم تسجيل الدخول بنجاح!');
       
       // Redirect based on role
       if (user.role === 'ADMIN') {
@@ -35,9 +38,12 @@ const LoginPage: React.FC = () => {
         navigate('/subscriptions');
       }
     } catch (error: any) {
+      const errorMessage = error.response?.data?.error || 'فشل في تسجيل الدخول. حاول مرة أخرى.';
       setErrors({
-        submit: error.response?.data?.error || 'Login failed. Please try again.',
+        submit: errorMessage,
       });
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }

@@ -1,93 +1,79 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuthStore } from '../store/authStore';
-import api from '../lib/api';
+import { useSubscriptions } from '../hooks/useSubscriptions';
+import { useModal } from '../hooks/useModal';
+import { useFilters } from '../hooks/useFilters';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import Modal from '../components/ui/Modal';
+import LoadingSpinner from '../components/common/LoadingSpinner';
+import EmptyState from '../components/common/EmptyState';
+import SubscriptionForm from '../components/subscriptions/SubscriptionForm';
 import { Plus, Edit, Search, AlertCircle, CheckCircle } from 'lucide-react';
-
-// interface Subscription {
-//   _id: string;
-//   playerId: string;
-//   month: string;
-//   hasPaid: boolean;
-//   paymentDate?: string;
-//   amount: number;
-//   player: {
-//     id: string;
-//     fullName: string;
-//     birthYear: number;
-//   };
-//   createdAt: string;
-// }
-interface Subscription {
-  _id: string;
-  player: {
-    _id: string;
-    fullName: string;
-    birthYear: number;
-    parentPhone?: string;
-    notes?: string;
-  };
-  month: string;
-  hasPaid: boolean;
-  paymentDate?: string;
-  amount: number;
-  createdAt: string;
-}
-
+import { SubscriptionFormData } from '../components/subscriptions/SubscriptionForm'; 
 
 const SubscriptionsPage: React.FC = () => {
   const { user } = useAuthStore();
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
-  const [players, setPlayers] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('');
-  const [filterYear, setFilterYear] = useState('');
-  const [formData, setFormData] = useState({
-    playerId: '',
-    month: '',
-    hasPaid: false,
-    paymentDate: '',
-    amount: '',
-  });
+  const {
+    subscriptions,
+    loading,
+    error,
+    createSubscription,
+    updateSubscription,
+    deleteSubscription,
+    totalIncome,
+    overdueSubscriptions,
+    isOverdue,
+    players,
+  } = useSubscriptions();
 
-  useEffect(() => {
-    fetchSubscriptions();
-    fetchPlayers();
-  }, []);
+  const { isOpen: isModalOpen, openModal, closeModal } = useModal();
+  const { filters, updateFilter } = useFilters();
 
-  const fetchSubscriptions = async () => {
-    try {
-      const response = await api.get('/subscriptions');
-      setSubscriptions(response.data);
-      console.log('Fetched subscriptions:', response.data);
-      
-    } catch (error) {
-      console.error('Error fetching subscriptions:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const [editingSubscription, setEditingSubscription] = useState<any>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState<SubscriptionFormData>({
+  playerId: '',
+  month: '',
+  hasPaid: false,
+  paymentDate: undefined,   // 👈 undefined بدل string فاضية
+  amount: 0,                // 👈 number بدل string
+});
 
-  const fetchPlayers = async () => {
-    try {
-      const response = await api.get('/players');
-      setPlayers(response.data);
-      console.log('Fetched players:', response.data);
-    } catch (error) {
-      console.error('Error fetching players:', error);
-    }
-  };
+  // ========== submit form ==========
+  // const handleSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
 
-        // console.log('players from to to:', players.map(player => player.fullName));
+  //   if (!formData.playerId || !formData.month || !formData.amount) {
+  //     alert('Please fill in all required fields.');
+  //     return;
+  //   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  //   setIsSubmitting(true);
+  //   try {
+  //     if (editingSubscription) {
+  //       await updateSubscription(editingSubscription._id, {
+  //         ...formData,
+  //         amount: Number(formData.amount),
+  //       });
+  //     } else {
+  //       await createSubscription({
+  //         ...formData,
+  //         amount: Number(formData.amount),
+  //       });
+  //     }
+  //     closeModal();
+  //     resetForm();
+  //   } catch (error) {
+  //     console.error('Error saving subscription:', error);
+  //     alert('Error saving subscription. Please try again.');
+  //   } finally {
+  //     setIsSubmitting(false);
+  //   }
+  // };
+const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
 
   if (!formData.playerId || !formData.month || !formData.amount) {
@@ -95,296 +81,308 @@ const SubscriptionsPage: React.FC = () => {
     return;
   }
 
+  setIsSubmitting(true);
   try {
-    const data = {
+    const payload = {
       ...formData,
-      amount: parseFloat(formData.amount),
-      paymentDate: formData.paymentDate || null,
+      playerId: typeof formData.playerId === "object" 
+        ? formData.playerId  // 👈 لو object رجعه id
+        : formData.playerId,
+      amount: Number(formData.amount),
     };
 
     if (editingSubscription) {
-      await api.put(`/subscriptions/${editingSubscription._id}`, data);
+      await updateSubscription(editingSubscription._id, payload);
     } else {
-      await api.post('/subscriptions', data);
+      await createSubscription(payload);
     }
-
-    fetchSubscriptions();
-    setIsModalOpen(false);
+    closeModal();
     resetForm();
   } catch (error) {
     console.error('Error saving subscription:', error);
+    alert('Error saving subscription. Please try again.');
+  } finally {
+    setIsSubmitting(false);
   }
 };
 
-  const handleEdit = (subscription: Subscription) => {
+  // ========== edit ==========
+  const handleEdit = (subscription: any) => {
     setEditingSubscription(subscription);
     setFormData({
-      playerId: subscription.player._id,
-      month: subscription.month,
-      hasPaid: subscription.hasPaid,
-      paymentDate: subscription.paymentDate ? subscription.paymentDate.split('T')[0] : '',
-      amount: subscription.amount.toString(),
-    });
-    setIsModalOpen(true);
+  playerId: subscription.playerId._id,
+  month: subscription.month,
+  hasPaid: subscription.hasPaid,
+  paymentDate: subscription.paymentDate, 
+  amount: subscription.amount,           
+});
+
+    openModal();
   };
 
+  // ========== delete ==========
+  const handleDelete = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this subscription?')) {
+      try {
+        await deleteSubscription(id);
+      } catch (error) {
+        console.error('Error deleting subscription:', error);
+        alert('Error deleting subscription. Please try again.');
+      }
+    }
+  };
+
+  // ========== reset form ==========
   const resetForm = () => {
     setFormData({
-      playerId: '',
-      month: '',
-      hasPaid: false,
-      paymentDate: '',
-      amount: '',
-    });
+  playerId: '',
+  month: '',
+  hasPaid: false,
+  paymentDate: undefined,  // 👈 زي ما معرف في SubscriptionFormData
+  amount: 0,               // 👈 رقم
+});
+
     setEditingSubscription(null);
   };
 
-  const isOverdue = (subscription: Subscription) => {
-    if (subscription.hasPaid) return false;
-    const createdDate = new Date(subscription.createdAt);
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    return createdDate < thirtyDaysAgo;
+  const handleModalClose = () => {
+    closeModal();
+    resetForm();
   };
 
-  const filteredSubscriptions = subscriptions.filter(subscription => {
-    const matchesSearch = subscription.player.fullName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === '' || 
-                         (filterStatus === 'paid' && subscription.hasPaid) ||
-                         (filterStatus === 'unpaid' && !subscription.hasPaid) ||
-                         (filterStatus === 'overdue' && isOverdue(subscription));
-    const matchesYear = filterYear === '' || subscription.player.birthYear.toString() === filterYear;
+  // ========== filter subscriptions ==========
+  const filteredSubscriptions = subscriptions.filter((subscription) => {
+    const matchesSearch = subscription.playerId.fullName
+      .toLowerCase()
+      .includes(filters.searchTerm.toLowerCase());
+    const matchesStatus =
+      !filters.filterStatus ||
+      (filters.filterStatus === 'paid' && subscription.hasPaid) ||
+      (filters.filterStatus === 'unpaid' && !subscription.hasPaid);
+    const matchesYear =
+      !filters.filterYear ||
+      subscription.playerId.birthYear.toString() === filters.filterYear;
+
     return matchesSearch && matchesStatus && matchesYear;
   });
 
-  const totalPaid = subscriptions
-    .filter(sub => sub.hasPaid)
-    .reduce((total, sub) => total + sub.amount, 0);
-
-  const birthYearOptions = Array.from(new Set(subscriptions.map(s => s.player.birthYear)))
-    .sort((a, b) => b - a)
-    .map(year => ({ value: year.toString(), label: year.toString() }));
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+  if (loading) {
+    return <LoadingSpinner />;
   }
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total Paid</p>
-              <p className="text-2xl font-bold text-green-600">{totalPaid.toLocaleString()} EGP</p>
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card>
+          <div className="flex items-center">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <CheckCircle className="h-6 w-6 text-blue-600" />
             </div>
-            <CheckCircle className="h-8 w-8 text-green-500" />
-          </div>
-        </Card>
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Unpaid</p>
-              <p className="text-2xl font-bold text-red-600">
-                {subscriptions.filter(s => !s.hasPaid).length}
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Total Subscriptions</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {subscriptions.length}
               </p>
             </div>
-            <AlertCircle className="h-8 w-8 text-red-500" />
           </div>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Overdue</p>
-              <p className="text-2xl font-bold text-yellow-600">
-                {subscriptions.filter(s => isOverdue(s)).length}
+        <Card>
+          <div className="flex items-center">
+            <div className="p-2 bg-green-100 rounded-lg">
+              <CheckCircle className="h-6 w-6 text-green-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Total Income</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {totalIncome.toFixed(2)} EGP
               </p>
             </div>
-            <AlertCircle className="h-8 w-8 text-yellow-500" />
+          </div>
+        </Card>
+        <Card>
+          <div className="flex items-center">
+            <div className="p-2 bg-red-100 rounded-lg">
+              <AlertCircle className="h-6 w-6 text-red-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Overdue</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {overdueSubscriptions.length}
+              </p>
+            </div>
           </div>
         </Card>
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Search players..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+      {/* Filters */}
+      <Card>
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex-1">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search by player name..."
+                value={filters.searchTerm}
+                onChange={(e) => updateFilter('searchTerm', e.target.value)}
+                className="pl-10"
+              />
+            </div>
           </div>
           <Select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
+            value={filters.filterStatus}
+            onChange={(e) => updateFilter('filterStatus', e.target.value)}
             options={[
               { value: '', label: 'All Status' },
               { value: 'paid', label: 'Paid' },
               { value: 'unpaid', label: 'Unpaid' },
-              { value: 'overdue', label: 'Overdue' },
             ]}
           />
           <Select
-            value={filterYear}
-            onChange={(e) => setFilterYear(e.target.value)}
+            value={filters.filterYear}
+            onChange={(e) => updateFilter('filterYear', e.target.value)}
             options={[
               { value: '', label: 'All Years' },
-              ...birthYearOptions,
+              { value: '2024', label: '2024' },
+              { value: '2023', label: '2023' },
+              { value: '2022', label: '2022' },
             ]}
           />
-        </div>
-        {user?.role === 'ADMIN' && (
-          <Button
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Subscription
-          </Button>
-        )}
-      </div>
-
-      <Card>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left p-4 font-medium text-gray-600">Player</th>
-                <th className="text-left p-4 font-medium text-gray-600">Birth Year</th>
-                <th className="text-left p-4 font-medium text-gray-600">Month</th>
-                <th className="text-left p-4 font-medium text-gray-600">Amount</th>
-                <th className="text-left p-4 font-medium text-gray-600">Status</th>
-                <th className="text-left p-4 font-medium text-gray-600">Payment Date</th>
-                {user?.role === 'ADMIN' && (
-                  <th className="text-left p-4 font-medium text-gray-600">Actions</th>
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {filteredSubscriptions.map((player) => (
-                <tr 
-                  key={player._id} 
-                  className={`border-b border-gray-100 hover:bg-gray-50 ${
-                    isOverdue(player) ? 'bg-red-50' : ''
-                  }`}
-                >
-                  <td className="p-4 font-medium text-gray-800">{player.player.fullName}</td>
-                  <td className="p-4 text-gray-600">{player.player.birthYear}</td>
-                  <td className="p-4 text-gray-600">{player.month}</td>
-                  <td className="p-4 text-gray-600">{player.amount.toLocaleString()} EGP</td>
-                  <td className="p-4">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      player.hasPaid 
-                        ? 'bg-green-100 text-green-800' 
-                        : isOverdue(player)
-                        ? 'bg-red-100 text-red-800'
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {player.hasPaid ? 'Paid' : isOverdue(player) ? 'Overdue' : 'Unpaid'}
-                    </span>
-                  </td>
-                  <td className="p-4 text-gray-600">
-                    {player.paymentDate 
-                      ? new Date(player.paymentDate).toLocaleDateString()
-                      : '-'
-                    }
-                  </td>
-                  {user?.role === 'ADMIN' && (
-                    <td className="p-4">
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => handleEdit(player)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {user?.role === 'ADMIN' && (
+            <Button onClick={openModal} className="bg-blue-600 hover:bg-blue-700">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Subscription
+            </Button>
+          )}
         </div>
       </Card>
 
+      {/* Subscriptions Table */}
+      {filteredSubscriptions.length === 0 ? (
+        <EmptyState
+          title="No subscriptions found"
+          description="Try adjusting your search or add a new subscription."
+          action={
+            user?.role === 'ADMIN' && (
+              <Button onClick={openModal} className="bg-blue-600 hover:bg-blue-700">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Subscription
+              </Button>
+            )
+          }
+        />
+      ) : (
+        <Card>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Player
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Month
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Amount
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Payment Date
+                  </th>
+                  {user?.role === 'ADMIN' && (
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  )}
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredSubscriptions.map((subscription) => (
+                  <tr
+                    key={subscription._id}
+                    className={isOverdue(subscription) ? 'bg-red-50' : ''}
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {subscription.playerId.fullName}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {subscription.playerId.birthYear}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {new Date(subscription.month).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                      })}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {subscription.amount} EGP
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          subscription.hasPaid
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}
+                      >
+                        {subscription.hasPaid ? 'Paid' : 'Unpaid'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {subscription.paymentDate
+                        ? new Date(subscription.paymentDate).toLocaleDateString()
+                        : '-'}
+                    </td>
+                    {user?.role === 'ADMIN' && (
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => handleEdit(subscription)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => handleDelete(subscription._id)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Modal for Adding/Editing Subscriptions */}
       {user?.role === 'ADMIN' && (
         <Modal
           isOpen={isModalOpen}
-          onClose={() => {
-            setIsModalOpen(false);
-            resetForm();
-          }}
+          onClose={handleModalClose}
           title={editingSubscription ? 'Edit Subscription' : 'Add New Subscription'}
-          actions={
-            <>
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  setIsModalOpen(false);
-                  resetForm();
-                }}
-              >
-                Cancel
-              </Button>
-              <Button onClick={handleSubmit}>
-                {editingSubscription ? 'Update' : 'Add'} Subscription
-              </Button>
-            </>
-          }
         >
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <Select
-              label="Player"
-              value={formData.playerId}
-              onChange={(e) => setFormData(prev => ({ ...prev, playerId: e.target.value }))}
-              options={[
-                { value: '', label: 'Select Player' },
-                ...players.map(player => ({
-                  value: player._id,
-                  label: `${player.fullName} (${player.birthYear})`,
-                })),
-              ]}
-              required
-            />
-            <Input
-              label="Month"
-              type="month"
-              value={formData.month}
-              onChange={(e) => setFormData(prev => ({ ...prev, month: e.target.value }))}
-              required
-            />
-            <Input
-              label="Amount (EGP)"
-              type="number"
-              value={formData.amount}
-              onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
-              required
-            />
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="hasPaid"
-                checked={formData.hasPaid}
-                onChange={(e) => setFormData(prev => ({ ...prev, hasPaid: e.target.checked }))}
-              />
-              <label htmlFor="hasPaid" className="text-sm text-gray-700">
-                Payment received
-              </label>
-            </div>
-            {formData.hasPaid && (
-              <Input
-                label="Payment Date"
-                type="date"
-                value={formData.paymentDate}
-                onChange={(e) => setFormData(prev => ({ ...prev, paymentDate: e.target.value }))}
-              />
-            )}
-          </form>
+          <SubscriptionForm
+            formData={formData}
+            setFormData={setFormData}
+            players={players}
+            onSubmit={handleSubmit}
+            isSubmitting={isSubmitting}
+          />
         </Modal>
       )}
     </div>
