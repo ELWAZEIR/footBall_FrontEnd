@@ -12,20 +12,36 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 import EmptyState from '../components/common/EmptyState';
 import PlayerForm from '../components/players/PlayerForm';
 import { Plus, Edit, Trash2, Search } from 'lucide-react';
+import ConfirmDeleteModal from '../components/common/ConfirmDelete';
+
+interface Player {
+  _id?: string;
+  fullName: string;
+  birthYear: number;
+  parentPhone: string;
+  notes?: string;
+}
 
 const PlayersPage: React.FC = () => {
   const { user } = useAuthStore();
   const {
     players,
-    isLoading,
-    savePlayer,
-    deletePlayer,
+    loading: isLoading,
+    createPlayer: addPlayer,
+    updatePlayer: editPlayer,
+    deletePlayer: removePlayer,
   } = usePlayers();
 
   const { isOpen: isModalOpen, openModal, closeModal } = useModal();
   const { filters, updateFilter } = useFilters();
-  const [editingPlayer, setEditingPlayer] = useState<any>(null);
+
+  const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Confirm delete modal state
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
   const [formData, setFormData] = useState({
     fullName: '',
     birthYear: '',
@@ -37,18 +53,30 @@ const PlayersPage: React.FC = () => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      await savePlayer(formData, editingPlayer);
+      const playerData: Player = {
+        fullName: formData.fullName.trim(),
+        birthYear: parseInt(formData.birthYear, 10),
+        parentPhone: formData.parentPhone.trim(),
+        notes: formData.notes.trim(),
+      };
+
+      if (editingPlayer?._id) {
+        await editPlayer(editingPlayer._id, playerData);
+      } else {
+        await addPlayer(playerData);
+      }
+
       closeModal();
       resetForm();
     } catch (error) {
       console.error('Error saving player:', error);
-      alert('Error saving player. Please try again.');
+      // أي توست خطأ غالباً بيتعامل معه الهوك
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleEdit = (player: any) => {
+  const handleEdit = (player: Player) => {
     setEditingPlayer(player);
     setFormData({
       fullName: player.fullName,
@@ -59,15 +87,16 @@ const PlayersPage: React.FC = () => {
     openModal();
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this player?')) {
-      try {
-        await deletePlayer(id);
-      } catch (error) {
-        console.error('Error deleting player:', error);
-        alert('Error deleting player. Please try again.');
-      }
-    }
+  const handleDelete = (id: string) => {
+    setDeleteId(id);
+    setIsConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    await removePlayer(deleteId);
+    setDeleteId(null);
+    // غلق المودال يتم من داخل ConfirmDeleteModal بعد نجاح onConfirm باستدعاء onClose
   };
 
   const resetForm = () => {
@@ -85,14 +114,20 @@ const PlayersPage: React.FC = () => {
     resetForm();
   };
 
-  const filteredPlayers = players.filter(player => {
-    const matchesSearch = player.fullName.toLowerCase().includes(filters.searchTerm.toLowerCase());
-    const matchesYear = !filters.filterYear || player.birthYear.toString() === filters.filterYear;
-    
+  const filteredPlayers = players.filter((player: Player) => {
+    const matchesSearch = player.fullName
+      .toLowerCase()
+      .includes((filters.searchTerm || '').toLowerCase());
+    const matchesYear =
+      !filters.filterYear || player.birthYear.toString() === filters.filterYear;
+
     return matchesSearch && matchesYear;
   });
 
-  if (isLoading) {
+  const availableYears = [...new Set(players.map((p: Player) => p.birthYear.toString()))]
+    .sort((a, b) => parseInt(b) - parseInt(a));
+
+  if (isLoading && players.length === 0) {
     return <LoadingSpinner />;
   }
 
@@ -106,7 +141,7 @@ const PlayersPage: React.FC = () => {
               <Plus className="h-6 w-6 text-blue-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Players</p>
+              <p className="text-sm font-medium text-gray-600">إجمالي اللاعبين</p>
               <p className="text-2xl font-bold text-gray-900">{players.length}</p>
             </div>
           </div>
@@ -117,7 +152,7 @@ const PlayersPage: React.FC = () => {
               <Edit className="h-6 w-6 text-green-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Active Players</p>
+              <p className="text-sm font-medium text-gray-600">اللاعبين النشطين</p>
               <p className="text-2xl font-bold text-gray-900">{players.length}</p>
             </div>
           </div>
@@ -131,7 +166,7 @@ const PlayersPage: React.FC = () => {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Search by player name..."
+                placeholder="البحث بواسطة اسم اللاعب..."
                 value={filters.searchTerm}
                 onChange={(e) => updateFilter('searchTerm', e.target.value)}
                 className="pl-10"
@@ -142,26 +177,17 @@ const PlayersPage: React.FC = () => {
             value={filters.filterYear}
             onChange={(e) => updateFilter('filterYear', e.target.value)}
             options={[
-              { value: '', label: 'All Years' },
-              { value: '2020', label: '2020' },
-              { value: '2021', label: '2021' },
-              { value: '2022', label: '2022' },
-              { value: '2010', label: '2010' },
-              { value: '2011', label: '2011' },
-              { value: '2012', label: '2012' },
-              { value: '2013', label: '2013' },
-              { value: '2014', label: '2014' },
-              { value: '2015', label: '2015' },
-              { value: '2016', label: '2016' },
-              { value: '2017', label: '2017' },
-              { value: '2018', label: '2018' },
-              { value: '2019', label: '2019' },
+              { value: '', label: 'جميع السنوات' },
+              ...availableYears.map((year) => ({
+                value: year,
+                label: year,
+              })),
             ]}
           />
           {user?.role === 'ADMIN' && (
             <Button onClick={openModal} className="bg-blue-600 hover:bg-blue-700">
               <Plus className="h-4 w-4 mr-2" />
-              Add Player
+              إضافة لاعب
             </Button>
           )}
         </div>
@@ -170,13 +196,13 @@ const PlayersPage: React.FC = () => {
       {/* Players Table */}
       {filteredPlayers.length === 0 ? (
         <EmptyState
-          title="No players found"
-          description="Try adjusting your search or add a new player."
+          title="لا يوجد لاعبين"
+          description="جرب تعديل البحث أو أضف لاعب جديد."
           action={
             user?.role === 'ADMIN' && (
               <Button onClick={openModal} className="bg-blue-600 hover:bg-blue-700">
                 <Plus className="h-4 w-4 mr-2" />
-                Add Player
+                إضافة لاعب
               </Button>
             )
           }
@@ -188,26 +214,26 @@ const PlayersPage: React.FC = () => {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Player Name
+                    اسم اللاعب
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Birth Year
+                    سنة الميلاد
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Parent Phone
+                    هاتف ولي الأمر
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Notes
+                    ملاحظات
                   </th>
                   {user?.role === 'ADMIN' && (
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
+                      الإجراءات
                     </th>
                   )}
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredPlayers.map((player) => (
+                {filteredPlayers.map((player: Player) => (
                   <tr key={player._id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
@@ -232,15 +258,17 @@ const PlayersPage: React.FC = () => {
                             variant="secondary"
                             size="sm"
                             onClick={() => handleEdit(player)}
+                            title="تعديل اللاعب"
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
-                                                     <Button
-                             variant="secondary"
-                             size="sm"
-                             onClick={() => handleDelete(player._id!)}
-                             className="text-red-600 hover:text-red-700"
-                           >
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => handleDelete(player._id!)}
+                            className="text-red-600 hover:text-red-700"
+                            title="حذف اللاعب"
+                          >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -259,7 +287,7 @@ const PlayersPage: React.FC = () => {
         <Modal
           isOpen={isModalOpen}
           onClose={handleModalClose}
-          title={editingPlayer ? 'Edit Player' : 'Add New Player'}
+          title={editingPlayer ? 'تعديل اللاعب' : 'إضافة لاعب جديد'}
         >
           <PlayerForm
             formData={formData}
@@ -269,6 +297,18 @@ const PlayersPage: React.FC = () => {
           />
         </Modal>
       )}
+
+      {/* Confirm Delete Modal (أحمر – يمنع الضغط خارج المودال) */}
+      <ConfirmDeleteModal
+        isOpen={isConfirmOpen}
+        title="تأكيد حذف اللاعب"
+        description="لن تتمكن من استرجاع هذا اللاعب بعد الحذف."
+        onClose={() => {
+          setIsConfirmOpen(false);
+          setDeleteId(null);
+        }}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 };
