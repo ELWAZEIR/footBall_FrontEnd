@@ -110,3 +110,94 @@ const RegistrationFilters: React.FC<RegistrationFiltersProps> = ({
 };
 
 export default RegistrationFilters;
+
+// import { Registration, PlayerWithRegistrationStatus } from '../types/registration';
+
+// export const filterRegistrations = (
+//   registrations: Registration[],
+//   searchTerm: string,
+//   filterStatus: string,
+//   filterYear: string
+// ) => {
+//   return registrations.filter(registration => {
+//     // Safety check - skip registrations with null/undefined player
+//     if (!registration.player || !registration.player.fullName) {
+//       return false;
+//     }
+
+//     const matchesSearch = registration.player.fullName
+//       .toLowerCase()
+//       .includes(searchTerm.toLowerCase());
+    
+//     const matchesYear = !filterYear || 
+//       registration.player.birthYear?.toString() === filterYear;
+
+//     let matchesStatus = true;
+//     if (filterStatus) {
+//       switch (filterStatus) {
+//         case 'complete':
+//           matchesStatus = registration.hasPaid && registration.hasSubmittedDocs;
+//           break;
+//         case 'incomplete':
+//           matchesStatus = !registration.hasPaid || !registration.hasSubmittedDocs;
+//           break;
+//         case 'paid':
+//           matchesStatus = registration.hasPaid;
+//           break;
+//         case 'unpaid':
+//           matchesStatus = !registration.hasPaid;
+//           break;
+//         case 'docs-submitted':
+//           matchesStatus = registration.hasSubmittedDocs;
+//           break;
+//         case 'docs-pending':
+//           matchesStatus = !registration.hasSubmittedDocs;
+//           break;
+//         default:
+//           matchesStatus = true;
+//       }
+//     }
+
+//     return matchesSearch && matchesYear && matchesStatus;
+//   });
+// };
+
+// export const filterPlayers = (
+//   players: PlayerWithRegistrationStatus[],
+//   searchTerm: string,
+//   filterStatus: string,
+//   filterYear: string
+// ) => {
+//   return players.filter(player => {
+//     // Safety check - ensure player has required properties
+//     if (!player || !player.fullName) {
+//       return false;
+//     }
+
+//     const matchesSearch = player.fullName
+//       .toLowerCase()
+//       .includes(searchTerm.toLowerCase());
+    
+//     const matchesYear = !filterYear || 
+//       player.birthYear?.toString() === filterYear;
+
+//     let matchesStatus = true;
+//     if (filterStatus) {
+//       switch (filterStatus) {
+//         case 'registered':
+//           matchesStatus = player.registrationStatus === 'registered';
+//           break;
+//         case 'incomplete':
+//           matchesStatus = player.registrationStatus === 'incomplete';
+//           break;
+//         case 'not-registered':
+//           matchesStatus = player.registrationStatus === 'not-registered';
+//           break;
+//         default:
+//           matchesStatus = true;
+//       }
+//     }
+
+//     return matchesSearch && matchesYear && matchesStatus;
+//   });
+// };

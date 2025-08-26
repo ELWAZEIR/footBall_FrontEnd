@@ -63,11 +63,13 @@ export const useSubscriptions = (): UseSubscriptionsReturn => {
   const fetchPlayers = async () => {
     try {
       const response = await api.get('/players');
-      setPlayers(response.data.data || []);
+      setPlayers(Array.isArray(response.data?.data) ? response.data.data : []);
+      console.log('Fetched players:', response.data);
     } catch (err: any) {
-      toast.error('فشل في تحميل اللاعبين');
+      toast.error('فشل في تحميل اللاعبين: من API useSubscriptions');
     }
   };
+
 
   const createSubscription = async (
     data: Omit<Subscription, '_id' | 'playerId' | 'createdAt' | 'updatedAt'> & { playerId: string }

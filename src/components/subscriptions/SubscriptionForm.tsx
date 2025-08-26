@@ -59,16 +59,17 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 p-4">
-      <Select
-        label="Player"
-        value={formData.playerId}
-        onChange={(e) => handleChange("playerId", e.target.value)}
-        options={players.map((p) => ({
-          value: p._id,
-          label: `${p.fullName} (${p.birthYear})`,
-        }))}
-        placeholder="Select a player"
-      />
+     <Select
+  label="Player"
+  value={formData.playerId}
+  onChange={(e) => handleChange("playerId", e.target.value)}
+  options={Array.isArray(players) ? players.map((p) => ({
+    value: p._id,
+    label: `${p.fullName} (${p.birthYear})`,
+  })) : []}
+  placeholder="Select a player"
+/>
+
 
       <Input
         label="Month"

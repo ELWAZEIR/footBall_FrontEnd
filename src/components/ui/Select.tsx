@@ -3,8 +3,8 @@ import React from 'react';
 interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
   error?: string;
-   placeholder?: string; 
-  options: { value: string | number; label: string }[];
+  placeholder?: string; 
+  options: { value: string | number; label: string }[] | undefined | null;
 }
 
 const Select: React.FC<SelectProps> = ({
@@ -15,6 +15,9 @@ const Select: React.FC<SelectProps> = ({
   className = '',
   ...props
 }) => {
+  // نتأكد إن options دايمًا array حتى لو undefined أو null
+  const safeOptions = Array.isArray(options) ? options : [];
+
   return (
     <div className="space-y-1">
       {label && (
@@ -31,7 +34,8 @@ const Select: React.FC<SelectProps> = ({
         `}
         {...props}
       >
-        {options.map((option) => (
+        {placeholder && <option value="">{placeholder}</option>}
+        {safeOptions.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}
           </option>
