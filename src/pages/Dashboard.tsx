@@ -148,7 +148,7 @@ const Dashboard: React.FC = () => {
           </div>
         </Card>
 
-        <Card className="p-6">
+        <Card className="p-6"> 
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
           <div className="space-y-3">
             <button className="w-full p-3 text-left bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">

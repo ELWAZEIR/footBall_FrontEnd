@@ -1,8 +1,8 @@
 import React from 'react';
-import Modal from './ui/Modal';
-import Button from './ui/Button';
-import Select from './ui/Select';
-import { Player, Registration, RegistrationFormData } from '../types/registration';
+import Modal from '../ui/Modal';
+import Button from '../ui/Button';
+import Select from '../ui/Select';
+import { Player, Registration, RegistrationFormData } from '../../types/registration';
 
 interface RegistrationModalProps {
   isOpen: boolean;

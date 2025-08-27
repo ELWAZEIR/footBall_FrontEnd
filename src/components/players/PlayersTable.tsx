@@ -1,8 +1,9 @@
 import React from 'react';
-import Card from './ui/Card';
-import Button from './ui/Button';
+
 import { Edit, Plus } from 'lucide-react';
-import { PlayerWithRegistrationStatus, Registration } from '../types/registration';
+import { PlayerWithRegistrationStatus, Registration } from '../../types/registration';
+import Button from '../ui/Button';
+import Card from '../ui/Card';
 
 interface PlayersTableProps {
   players: PlayerWithRegistrationStatus[];

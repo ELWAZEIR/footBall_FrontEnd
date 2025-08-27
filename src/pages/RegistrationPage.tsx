@@ -173,13 +173,14 @@ import { useRegistrations } from '../hooks/useRegistrations';
 import { useModal } from '../hooks/useModal';
 import { useFilters } from '../hooks/useFilters';
 import { filterRegistrations, filterPlayers } from '../utils/registrationFilters';
-import RegistrationStats from '../components/RegistrationStats';
-import RegistrationsTable from '../components/RegistrationsTable';
-import PlayersTable from '../components/PlayersTable';
-import RegistrationModal from '../components/RegistrationModal';
+import RegistrationStats from '../components/registration/RegistrationStats';
+import RegistrationsTable from '../components/registration/RegistrationsTable';
+import RegistrationModal from '../components/registration/RegistrationModal';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { Registration, RegistrationFormData, ViewMode, PlayerWithRegistrationStatus } from '../types/registration';
-import RegistrationFilters from '../components/RegistrationFilters';
+import RegistrationFilters from '../components/registration/RegistrationFilters';
+import PlayersTable from '../components/players/PlayersTable';
+import ConfirmDeleteModal from '../components/common/ConfirmDelete';
 
 const RegistrationPage: React.FC = () => {
   const { user } = useAuthStore();
@@ -190,6 +191,10 @@ const RegistrationPage: React.FC = () => {
     isLoading,
     saveRegistration,
     totalIncome,
+    isConfirmOpen,
+    handleDelete,
+    confirmDelete,
+    setIsConfirmOpen
   } = useRegistrations();
 
   const { isOpen: isModalOpen, openModal, closeModal } = useModal();
@@ -365,6 +370,7 @@ const RegistrationPage: React.FC = () => {
           registrations={filteredRegistrations}
           isAdmin={user?.role === 'ADMIN'}
           onEdit={handleEdit}
+          onDelete={handleDelete}
         />
       ) : (
         <PlayersTable
@@ -388,6 +394,14 @@ const RegistrationPage: React.FC = () => {
           isSubmitting={isSubmitting}
         />
       )}
+      {/* مودال التأكيد على الحذف */}
+      <ConfirmDeleteModal
+        isOpen={isConfirmOpen}
+        title="تأكيد الحذف"
+        description="هل أنت متأكد أنك تريد حذف هذا الزي؟"
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 };

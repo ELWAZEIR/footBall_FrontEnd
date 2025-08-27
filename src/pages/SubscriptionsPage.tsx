@@ -11,7 +11,7 @@ import Modal from "../components/ui/Modal";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import EmptyState from "../components/common/EmptyState";
 import SubscriptionForm from "../components/subscriptions/SubscriptionForm";
-import { Plus, Edit, Search, AlertCircle, CheckCircle } from "lucide-react";
+import { Plus, Edit, Search, AlertCircle, CheckCircle, Trash2 } from "lucide-react";
 import ConfirmDeleteModal from "../components/common/ConfirmDelete";
 import toast from "react-hot-toast";
 
@@ -244,7 +244,7 @@ const SubscriptionsPage: React.FC = () => {
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button size="sm" variant="secondary" className="text-red-600" onClick={() => handleDelete(sub._id)}>
-                          Delete
+                         <Trash2 className="h-4 w-4" /> 
                         </Button>
                       </td>
                     )}

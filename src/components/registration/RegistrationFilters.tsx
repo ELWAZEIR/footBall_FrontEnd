@@ -1,9 +1,9 @@
 import React from 'react';
-import Button from './ui/Button';
-import Input from './ui/Input';
-import Select from './ui/Select';
+import Button from '../ui/Button';
+import Input from '../ui/Input';
+import Select from '../ui/Select';
 import { Search, Plus } from 'lucide-react';
-import { Player, ViewMode } from '../types/registration';
+import { Player, ViewMode } from '../../types/registration';
 
 interface RegistrationFiltersProps {
   searchTerm: string;

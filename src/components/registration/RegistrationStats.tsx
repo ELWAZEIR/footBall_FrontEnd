@@ -1,7 +1,7 @@
 import React from 'react';
-import Card from './ui/Card';
+import Card from '../ui/Card';
 import { CheckCircle, XCircle, FileText, User } from 'lucide-react';
-import { Registration } from '../types/registration';
+import { Registration } from '../../types/registration';
 
 interface RegistrationStatsProps {
   registrations: Registration[];

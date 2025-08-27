@@ -1,11 +1,12 @@
 import React from 'react';
-import Card from './ui/Card';
-import Button from './ui/Button';
-import { Edit } from 'lucide-react';
-import { Registration } from '../types/registration';
+import Card from '../ui/Card';
+import Button from '../ui/Button';
+import { Edit, Trash2 } from 'lucide-react';
+import { Registration } from '../../types/registration';
 
 interface RegistrationsTableProps {
   registrations: Registration[];
+    onDelete: (id: string) => void;
   isAdmin: boolean;
   onEdit: (registration: Registration) => void;
 }
@@ -14,6 +15,7 @@ const RegistrationsTable: React.FC<RegistrationsTableProps> = ({
   registrations,
   isAdmin,
   onEdit,
+  onDelete
 }) => {
   return (
     <Card>
@@ -72,12 +74,23 @@ const RegistrationsTable: React.FC<RegistrationsTableProps> = ({
                 {isAdmin && (
                   <td className="p-4">
                     <Button
+                      className='mr-2'
                       variant="secondary"
                       size="sm"
                       onClick={() => onEdit(registration)}
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
+
+                      <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => onDelete(registration._id)}
+                    className="text-red-600 hover:text-red-700"
+                    title="حذف اللاعب"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                   </td>
                 )}
               </tr>

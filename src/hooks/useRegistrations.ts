@@ -113,6 +113,8 @@
 //     totalIncome,
 //   };
 // };
+
+
 import { useState, useEffect } from 'react';
 import api from '../lib/api';
 import { Registration, Player, PlayerWithRegistrationStatus, RegistrationFormData } from '../types/registration';
@@ -123,6 +125,8 @@ export const useRegistrations = () => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [playersWithStatus, setPlayersWithStatus] = useState<PlayerWithRegistrationStatus[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const fetchRegistrations = async () => {
     try {
@@ -239,6 +243,25 @@ export const useRegistrations = () => {
     }
   };
 
+  
+const handleDelete = (id: string) => {
+  setDeleteId(id);
+  setIsConfirmOpen(true);
+};
+
+const confirmDelete = async () => {
+  if (!deleteId) return;
+  try {
+    await api.delete(`/registrations/${deleteId}`);
+    fetchRegistrations();
+  } catch (error) {
+    console.error("Error deleting registration:", error);
+  } finally {
+    setIsConfirmOpen(false);
+    setDeleteId(null);
+  }
+};
+
   useEffect(() => {
     fetchRegistrations();
     fetchPlayers();
@@ -263,5 +286,9 @@ export const useRegistrations = () => {
     fetchRegistrations,
     saveRegistration,
     totalIncome,
+    isConfirmOpen,
+    handleDelete,
+    confirmDelete,
+    setIsConfirmOpen
   };
 };
