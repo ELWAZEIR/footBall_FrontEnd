@@ -6,6 +6,8 @@ import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import Modal from '../components/ui/Modal';
 import { Plus, Edit, Trash2, Search, UserCheck } from 'lucide-react';
+import ConfirmDeleteModal from '../components/common/ConfirmDelete';
+import { useAuthStore } from '../store/authStore';
 
 interface Coach {
   _id: string;
@@ -23,6 +25,8 @@ const CoachesPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCoach, setEditingCoach] = useState<Coach | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+    const [deleteId, setDeleteId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -83,16 +87,23 @@ const CoachesPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this coach?')) {
-      try {
-        await api.delete(`/users/${id}`);
-        fetchCoaches();
-      } catch (error) {
-        console.error('Error deleting coach:', error);
-      }
-    }
-  };
+const handleDelete = (id: string) => {
+  setDeleteId(id);
+  setIsConfirmOpen(true);
+};
+
+const confirmDelete = async () => {
+  if (!deleteId) return;
+  try {
+    await api.delete(`/users/${deleteId}`);
+    fetchCoaches();
+  } catch (error) {
+    console.error("Error deleting coach:", error);
+  } finally {
+    setIsConfirmOpen(false);
+    setDeleteId(null);
+  }
+};
 
   const resetForm = () => {
     setFormData({
@@ -321,6 +332,14 @@ const CoachesPage: React.FC = () => {
           )}
         </form>
       </Modal>
+       {/* مودال التأكيد على الحذف */}
+      <ConfirmDeleteModal
+        isOpen={isConfirmOpen}
+        title="تأكيد الحذف"
+        description="هل أنت متأكد أنك تريد حذف هذا الزي؟"
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 };

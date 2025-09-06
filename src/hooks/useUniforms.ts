@@ -64,7 +64,8 @@ const [deleteId, setDeleteId] = useState<string | null>(null);
     try {
       const data = {
         ...formData,
-        amount: parseFloat(formData.amount),
+        // amount: parseFloat(formData.amount),
+        amount: formData.amount ? parseFloat(formData.amount) : 0,
         size: formData.size.replace("SIZE_", ""),
       };
 
@@ -89,7 +90,9 @@ const [deleteId, setDeleteId] = useState<string | null>(null);
       hasPaid: uniform.hasPaid,
       hasReceived: uniform.hasReceived,
       size: uniform.size,
-      amount: uniform.amount.toString(),
+      amount: uniform.amount ? uniform.amount.toString() : "",
+
+      // amount: uniform.amount.toString(),
     });
     setIsModalOpen(true);
   };

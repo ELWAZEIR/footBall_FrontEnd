@@ -53,7 +53,10 @@ const UniformTable: React.FC<Props> = ({
                 <td className="p-4 font-medium">{u.player.fullName}</td>
                 <td className="p-4">{u.player.birthYear}</td>
                 <td className="p-4">{u.size.replace("SIZE_", "")}</td>
-                <td className="p-4">{u.amount.toLocaleString()} EGP</td>
+                {/* <td className="p-4">{u.amount.toLocaleString()} EGP</td> */}
+                <td className="p-4">
+                  {u.amount ? u.amount.toLocaleString() : "0"} EGP
+                </td>
                 <td className="p-4">
                   <span
                     className={`px-2 py-1 rounded-full text-xs ${
