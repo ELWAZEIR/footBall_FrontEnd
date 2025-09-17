@@ -62,10 +62,7 @@ export const useDashboard = () => {
         parentPhone: formData.parentPhone.trim(),
         notes: formData.notes.trim(),
       });
-      navigate("/players"); // Navigate to players list after adding
-    //   // ✅ بعد إضافة لاعب، نحدث البيانات
-    //   await refreshDashboard();
-
+      navigate("/players"); 
       closeModal();
       resetForm();
     } catch (error) {

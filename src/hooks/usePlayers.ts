@@ -12,6 +12,13 @@ interface Player {
   updatedAt: string;
 }
 
+export interface PlayerFormData {
+  fullName: string;
+  birthYear:  string;
+  parentPhone: string;
+  notes?: string;
+}
+
 interface UsePlayersReturn {
   players: Player[];
   loading: boolean;

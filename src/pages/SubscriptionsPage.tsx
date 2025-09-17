@@ -29,13 +29,22 @@ const SubscriptionsPage: React.FC = () => {
     isOverdue,
     players,
   } = useSubscriptions();
-
+interface Player {
+  _id?: string;
+  fullName: string;
+  birthYear: number;
+  parentPhone: string;
+  notes?: string;
+}
   const { isOpen: isModalOpen, openModal, closeModal } = useModal();
   const { filters, updateFilter } = useFilters();
 
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [editingSubscription, setEditingSubscription] = useState<any>(null);
+  
+const availableYears = [...new Set(players.map((p: Player) => p.birthYear.toString()))]
+    .sort((a, b) => parseInt(b) - parseInt(a));
 
   // فتح مودال التعديل
   const handleEdit = (subscription: any) => {
@@ -175,7 +184,7 @@ const SubscriptionsPage: React.FC = () => {
               { value: "unpaid", label: "Unpaid" },
             ]}
           />
-          <Select
+          {/* <Select
             value={filters.filterYear}
             onChange={(e) => updateFilter("filterYear", e.target.value)}
             options={[
@@ -183,6 +192,31 @@ const SubscriptionsPage: React.FC = () => {
               { value: "2024", label: "2024" },
               { value: "2023", label: "2023" },
               { value: "2022", label: "2022" },
+              { value: "2022", label: "2021" },
+              { value: "2022", label: "2020" },
+              { value: "2022", label: "2019" },
+              { value: "2022", label: "2018" },
+              { value: "2022", label: "2017" },
+              { value: "2022", label: "2016" },
+              { value: "2022", label: "2015" },
+              { value: "2022", label: "2014" },
+              { value: "2022", label: "2013" },
+              { value: "2022", label: "2012" },
+              { value: "2022", label: "2011" },
+              { value: "2022", label: "2010" },
+              { value: "2022", label: "2009" },
+              { value: "2022", label: "2008" },
+            ]}
+          /> */}
+          <Select
+            value={filters.filterYear}
+            onChange={(e) => updateFilter('filterYear', e.target.value)}
+            options={[
+              { value: '', label: "All Years" },
+              ...availableYears.map((year) => ({
+                value: year,
+                label: year,
+              })),
             ]}
           />
           {user?.role === "ADMIN" && (

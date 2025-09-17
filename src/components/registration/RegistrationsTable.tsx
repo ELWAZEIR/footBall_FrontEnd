@@ -42,11 +42,11 @@ const RegistrationsTable: React.FC<RegistrationsTableProps> = ({
                 key={registration._id} 
                 className="border-b border-gray-100 hover:bg-gray-50"
               >
-                <td className="p-4 font-medium text-gray-800">{registration.player.fullName}</td>
-                <td className="p-4 text-gray-600">{registration.player.birthYear}</td>
-                <td className="p-4 text-gray-600">{registration.player.parentPhone || '-'}</td>
-                <td className="p-4 text-gray-600">{registration.player.notes || '-'}</td>
-                <td className="p-4 text-gray-600">{registration.amount.toLocaleString()} EGP</td>
+                <td className="p-4 font-medium text-gray-800">{registration?.player.fullName}</td>
+                <td className="p-4 text-gray-600">{registration?.player.birthYear}</td>
+                <td className="p-4 text-gray-600">{registration?.player.parentPhone || '-'}</td>
+                <td className="p-4 text-gray-600">{registration?.player.notes || '-'}</td>
+                <td className="p-4 text-gray-600">{registration?.amount.toLocaleString()} EGP</td>
                 <td className="p-4">
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                     registration.hasPaid 
